@@ -1,6 +1,6 @@
 # 🦇 BAT – Boosted Accuracy Transcription
 
-Open-source API designed to improve ASR transcription accuracy by post-processing with Anthropic's LLMs. This project is inspired by the [IEEE paper](https://arxiv.org/pdf/2409.09554) by [S. K. Sahu et al. (2023)](https://scholar.google.com/citations?user=6664y6cAAAAJ&hl=en).
+Open-source API designed to improve ASR transcription accuracy by post-processing with Anthropic's LLMs.
 
 ## Setup
 

@@ -4,7 +4,8 @@ from fastapi import HTTPException
 
 async def get_transcript_and_sentences(
     transcript_id: str,
-    auth_token: str
+    auth_token: str,
+    confidence_filter: float = 1.0
 ) -> Tuple[str, List[str]]:
     """
     Retrieve transcript and sentences from AssemblyAI
@@ -32,6 +33,11 @@ async def get_transcript_and_sentences(
         # Get sentences
         sentences = transcript.get_paragraphs()
         
+        if confidence_filter < 1.0:
+            sentences = [sentence for sentence in sentences if sentence.confidence < confidence_filter]
+            if len(sentences) == 0:
+                return transcript.text, []
+            
         return transcript.text, [sentence.text for sentence in sentences]
 
     except Exception as e:

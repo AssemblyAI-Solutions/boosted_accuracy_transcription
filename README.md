@@ -20,10 +20,14 @@ uvicorn api:app --reload
 ```
 
 2. The API accepts the following parameters:
-   - `domain`: (e.g., medical, legal, sales)
-   - `word_boost_list`: (custom terminology that may be mistranscribed)
-   - `transcript_id`: (the transcript ID from AssemblyAI)
-   - `custom_instructions`: (this can be formatting instructions, additional context, etc.)
-   - `boost_level`: (defaults to `high`, `high` is more accurate but more expensive, `low` is less accurate but cheaper)
+
+   | Parameter | Description |
+   |-----------|-------------|
+   | `transcript_id` | **Required.** The transcript ID from AssemblyAI |
+   | `domain` | Optional domain context (e.g., medical, legal, sales) |
+   | `word_boost_list` | Custom terminology that may be mistranscribed |
+   | `custom_instructions` | Additional formatting instructions or context |
+   | `boost_level` | Accuracy vs cost tradeoff (`high`/`low`, defaults to `high`) |
+   | `confidence_filter` | Confidence threshold between 0-1 for selective correction (defaults to 1.0) |
 
 3. Include your AssemblyAI API key in the request header as `Authorization: <API_KEY>`

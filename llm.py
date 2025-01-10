@@ -9,54 +9,41 @@ load_dotenv()
 
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 
-# Initialize Anthropic client with basic configuration
-try:
-    client = Anthropic(
-        api_key=ANTHROPIC_API_KEY
-    )
-except Exception as e:
-    print(f"Error initializing Anthropic client: {e}")
-    raise
-
 PROMPT_TEMPLATE = '''
-Your task is to identify possible corrections in the transcript I give you.
-You will be given a chunk of a transcript and a list of specific vocabulary words that could be in the chunk.
-
-Vocabulary boost list: {word_boost_list}
-
-{domain}
-{custom_instructions}
-
-Original text:
-{sentence}
-
-Your job is to identify words that are misspelled in the transcript and correct them if they are spelled incorrectly.
-Use the given vocabulary list for any specific terminology or proper nouns that may be in the transcript.
-Use the context of the transcript to guide your corrections.
+Given a excerpt of a transcript, your job is to identify clear mispellings in the transcript and correct them to improve the general word accuracy of the transcript.
+You may also be given a list of correctly spelled vocabulary words to consider. If you are given a list, you should consider possible misspellings for the words provided in the list.
+You may also be given a domain context. If you are given a domain context, you should use it to guide your corrections. For example, if the domain is "medical", you should only consider corrections that are relevant to medical terminology.
 
 Additional instructions:
-- Do not overcorrect the transcript. Only correct the words that look misspelled or inconsistent.
-- Capitalize the first letter of proper nouns.
+- To correctly identify misspellings, you should use context clues from the transcript.
+- Some misspellings may be just a few letters from being correctly spelled, or may be spelled phonetically similar to the correct word.
+- Be extremely conservative with corrections. If you are unsure whether a word is misspelled or is domain-specific terminology, DO NOT correct it.
+- You must focus only on obvious misspellings, not grammar, sentence structure, or minor formatting issues.
 - Keep the structure and word order intact.
-- Do not add or delete words unless you are making a correction.
-- You don't have to modify the original transcript if it already looks correct.
-- If there are no corrections needed, you should return an empty array like this [].
+- Do not add or delete additional words unless it is absolutely necessary for making a correction.
+- You should not modify the original transcript if it already looks correct. If there are no corrections needed, you should return an empty array like this [].
+- When given a domain context, you must first verify that any word you plan to correct is not valid terminology in that domain.
+{custom_instructions}
 
-Return your suggested corrections in JSON with a confidence score between 0 and 1. For example, if you are extremely confident in the correction, you should return 1. If you are not confident at all, you should return less than 0.5.
-Do not include explanations in your response.
-Return your response as a JSON array of objects, where each object contains:
+Return your suggested corrections with a confidence score between 0 and 1 associated with each correction. For example, if you are extremely confident in the correction, you should return above 0.9. If you are not confident at all, you should return 0.5 or less or consider not making a correction.
+Do not include any other explanations in your response.
+
+Return your response as a valid JSON array of objects, where each object contains:
 - original_word: the misspelled word from the transcript
 - corrected_word: your suggested correction
 - confidence: a number between 0 and 1 indicating your confidence in the correction
+
+{word_boost_list}
+{domain}
 '''
 
 def process_single_sentence(args) -> Tuple[int, str, float]:
     index, sentence, domain, word_boost_list, custom_instructions, boost_level = args
     
     prompt = PROMPT_TEMPLATE.format(
-        domain="Domain: " + domain if domain else "",
-        word_boost_list=", ".join(word_boost_list),
-        custom_instructions="Custom instructions: " + custom_instructions if custom_instructions else "",
+        domain="Domain context: " + domain if domain else "",
+        word_boost_list="Vocabulary list: " + ", ".join(word_boost_list) if word_boost_list else "",
+        custom_instructions="- " + custom_instructions if custom_instructions else "",
         sentence=sentence
     )
 
@@ -67,9 +54,10 @@ def process_single_sentence(args) -> Tuple[int, str, float]:
         response = client.messages.create(
             model=model,
             max_tokens=1024,
+            system=prompt,
             messages=[{
                 "role": "user",
-                "content": prompt
+                "content": sentence
             }]
         )
     except AnthropicError as e:

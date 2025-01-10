@@ -17,9 +17,10 @@ class BoostLevel(str, Enum):
 class TranscriptRequest(BaseModel):
     transcript_id: str
     domain: Optional[str] = None
-    word_boost_list: List[str]
+    word_boost_list: Optional[List[str]] = None
     custom_instructions: Optional[str] = None
     boost_level: Optional[BoostLevel] = BoostLevel.HIGH
+    confidence_filter: Optional[float] = 1.0
 
 class TranscriptResponse(BaseModel):
     original_transcript: str
@@ -39,16 +40,11 @@ async def process_transcript(
         # Get transcript and sentences from AssemblyAI
         transcript, sentences = await get_transcript_and_sentences(
             request.transcript_id,
-            authorization
+            authorization,
+            request.confidence_filter or 1.0
         )
 
         print('OG Transcript: ', transcript)
-
-        if not transcript or not sentences:
-            raise HTTPException(
-                status_code=404,
-                detail="Transcript not found or processing failed"
-            )
 
         start_time = time.time()
         # Process sentences with Anthropic - run in a thread pool since it's CPU intensive
